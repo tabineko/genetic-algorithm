@@ -36,7 +36,6 @@ class Population():
 
     def __init__(self) -> None:
         self.generation = 0
-        self.rng = np.random.default_rng(1234)
 
         self.crossover_rate = 0
         self.mutation_rate = 0
@@ -53,7 +52,7 @@ class Population():
         # generate each instances
         self.genes = [Gene.make_random_instance(self.length_gene) for _ in range(self.population)]
 
-    
+
     def calc_fitness(self):
         self.fitness = []
         for gene in self.genes:
@@ -81,17 +80,26 @@ class Population():
                 ))
 
         # selection
-        selected_genes = []
-
+        selected_genes = self.tournament_selection()
 
         # crossover
+        # shuffle the selected list and reshape into (n, 2)
+        selected_genes = random.shuffle(selected_genes)
+        selected_genes = np.array(selected_genes).reshape(-1, 2).tolist()
 
+        # loop length_of_genes_conbination times to generate new genes.
+        # make new genes and generate Gene object and add it to nextgen_list.
+        for gene1, gene2 in selected_genes:
+            g1, g2 = self.uniform_crossover(gene1.gene, gene2.gene)
+            next_generation.extend([Gene(gene=g1), Gene(gene=g2)])
 
         # mutation
 
 
         # calculate fitness
         # self.calc_fitness()
+
+        self.generation += 1
 
     # fitness function for onemax problem
     def onemax(self, gene):
@@ -103,8 +111,22 @@ class Population():
     def random_selection(self, genes, num_selection):
         return random.choices(genes, k=num_selection)
 
-    def uniform_crossover(self, gene1, gene2, length_gen):
-        mask = self.rng.integers(low=0, high=1, size=length_gen)
+    def roulette_selection(self):
+        pass
+
+    def tournament_selection(self, tournament_size=2):
+        # winners = []
+        # for _ in range(self.population_selection):
+        #     sampled = random.sample(self.genes, k=tournament_size)
+        #     winners.append(max(sampled))
+        
+        return [max(random.sample(self.genes, k=tournament_size)) for _ in range(self.population_selection)]
+
+    def rank_selection(self):
+        pass
+
+    def uniform_crossover(self, gene1, gene2):
+        mask = self.rng.integers(low=0, high=1, size=self.length_gene)
         g1 = gene1 & mask | gene2 & ~mask
         g2 = gene1 & ~mask | gene2 & mask
         return g1, g2
