@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from numpy.core.fromnumeric import mean
+from numpy.core.numeric import cross
 import scipy as sp
 from tqdm import tqdm
 import pandas as pd
@@ -21,7 +23,7 @@ class Gene():
         gene = cls(np.random.randint(0, 2, length_gene))
         return gene
 
-    def get_fitness(self) -> float:
+    def get_fitness(self) -> int:
         return onemax(self.gene)
 
     def __lt__(self, other):
@@ -54,9 +56,9 @@ class Population():
 
 
     def calc_fitness(self):
-        self.fitness = []
+        self.fitnesses = []
         for gene in self.genes:
-            self.fitness.append(self.onemax(gene))
+            self.fitnesses.append(self.onemax(gene))
 
     def reset(self):
         self.genes = [Gene.make_random_instance(self.length_gene) for _ in range(self.population)]
@@ -89,21 +91,31 @@ class Population():
 
         # loop length_of_genes_conbination times to generate new genes.
         # make new genes and generate Gene object and add it to nextgen_list.
+        # crossovered_genes = []
         for gene1, gene2 in selected_genes:
             g1, g2 = self.uniform_crossover(gene1.gene, gene2.gene)
-            next_generation.extend([Gene(gene=g1), Gene(gene=g2)])
+            gene1.modify_gene(g1)
+            gene2.modify_gene(g2)
+            # crossovered_genes.extend([Gene(gene=g1), Gene(gene=g2)])
+        selected_genes = np.array(selected_genes).flatten().tolist()
 
         # mutation
+        selected_genes = self.mutation(selected_genes)
 
+        next_generation.extend(selected_genes)
 
-        # calculate fitness
-        # self.calc_fitness()
-
+        self.genes = next_generation
+        self.calc_fitness()
+        np.mean(self.fitnesses)
+        np.max(self.fitnesses)
+        np.min(self.fitnesses)
         self.generation += 1
+
+
 
     # fitness function for onemax problem
     def onemax(self, gene):
-        return np.sum(gene)
+        return np.sum(gene.gene)
     
     def elete_selection(self):
         return sorted(self.genes, reverse=True)[:self.num_elete_selection]
@@ -130,6 +142,14 @@ class Population():
         g1 = gene1 & mask | gene2 & ~mask
         g2 = gene1 & ~mask | gene2 & mask
         return g1, g2
+    
+    def mutation(self, genes):
+        for gene in genes:
+            mask=random.choices([0, 1], k=self.length_gene, weights=[1-self.mutation_rate, self.mutation_rate])
+            gene.modify_gene(gene.gene ^ mask)
+        
+        return genes
+
 
 
 if __name__ == '__main__':
