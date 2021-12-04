@@ -38,22 +38,25 @@ class Population():
 
     def __init__(self) -> None:
         self.generation = 0
+        self.rng = np.random.default_rng(1234)
 
-        self.crossover_rate = 0
-        self.mutation_rate = 0
-        self.population = 50
+        self.crossover_rate = 0.3
+        self.mutation_rate = 0.005
+        self.population = 100
         self.length_gene = 10
-        self.generation_gap = 1.0
-        self.num_elete_selection = 0
+        self.generation_gap = 0.8
+        self.num_elete_selection = 2
         
         self.population_selection = int((self.population * self.generation_gap )// 2 * 2) 
         self.population_copy = self.population - self.population_selection
         if self.num_elete_selection > self.population_copy:
             self.num_elete_selection = self.population_copy
+        print(self.population_selection, self.num_elete_selection, self.population_copy)
+        
 
         # generate each instances
         self.genes = [Gene.make_random_instance(self.length_gene) for _ in range(self.population)]
-
+        self.calc_fitness()
 
     def calc_fitness(self):
         self.fitnesses = []
@@ -83,21 +86,23 @@ class Population():
 
         # selection
         selected_genes = self.tournament_selection()
+        # print(selected_genes)
 
         # crossover
         # shuffle the selected list and reshape into (n, 2)
-        selected_genes = random.shuffle(selected_genes)
+        selected_genes = random.sample(selected_genes, len(selected_genes))
         selected_genes = np.array(selected_genes).reshape(-1, 2).tolist()
 
         # loop length_of_genes_conbination times to generate new genes.
         # make new genes and generate Gene object and add it to nextgen_list.
-        # crossovered_genes = []
+        crossovered_genes = []
         for gene1, gene2 in selected_genes:
             g1, g2 = self.uniform_crossover(gene1.gene, gene2.gene)
-            gene1.modify_gene(g1)
-            gene2.modify_gene(g2)
-            # crossovered_genes.extend([Gene(gene=g1), Gene(gene=g2)])
-        selected_genes = np.array(selected_genes).flatten().tolist()
+            # gene1.modify_gene(g1)
+            # gene2.modify_gene(g2)
+            crossovered_genes.extend([Gene(gene=g1), Gene(gene=g2)])
+        # selected_genes = np.array(selected_genes).flatten().tolist()
+        selected_genes = crossovered_genes
 
         # mutation
         selected_genes = self.mutation(selected_genes)
@@ -106,11 +111,12 @@ class Population():
 
         self.genes = next_generation
         self.calc_fitness()
-        np.mean(self.fitnesses)
-        np.max(self.fitnesses)
-        np.min(self.fitnesses)
         self.generation += 1
-
+        print(self.generation, 
+            np.mean(self.fitnesses),
+            np.max(self.fitnesses),
+            np.min(self.fitnesses))
+        
 
 
     # fitness function for onemax problem
@@ -127,20 +133,28 @@ class Population():
         pass
 
     def tournament_selection(self, tournament_size=2):
-        # winners = []
-        # for _ in range(self.population_selection):
-        #     sampled = random.sample(self.genes, k=tournament_size)
-        #     winners.append(max(sampled))
+        winners = []
+        for _ in range(self.population_selection):
+            sampled = random.sample(self.genes, k=tournament_size)
+            winners.append(sampled[np.argmax(sampled)])
         
-        return [max(random.sample(self.genes, k=tournament_size)) for _ in range(self.population_selection)]
+        return winners
+        
+        # return [max(random.sample(self.genes, k=tournament_size)) for _ in range(self.population_selection)]
 
     def rank_selection(self):
         pass
 
     def uniform_crossover(self, gene1, gene2):
-        mask = self.rng.integers(low=0, high=1, size=self.length_gene)
+        # if do not crossover
+        if random.random() > self.crossover_rate:
+            return gene1, gene2
+        
+        # if do crossover
+        mask = self.rng.integers(low=0, high=2, size=self.length_gene)
         g1 = gene1 & mask | gene2 & ~mask
         g2 = gene1 & ~mask | gene2 & mask
+        
         return g1, g2
     
     def mutation(self, genes):
@@ -151,14 +165,14 @@ class Population():
         return genes
 
 
-
 if __name__ == '__main__':
-    p = [Gene.make_random_instance(10) for _ in range(10)]
-    print(len(p))
-    pprint(p)
-    for pop in p:
-        print(pop.gene, pop.fitness)
-    # print()
-    print(max(p))
+    pop = Population()
+
+    for i in range(30):
+
+        pop.step()
+        # for gene in pop.genes:
+        #     pprint(gene.gene)
+        # print()
 
 
