@@ -182,17 +182,17 @@ class Population():
 if __name__ == '__main__':
 
 
-    populations = [10, 50, 100, 200]
-    hist = [[], [], [], []]
+    crossover_probs = [0.1, 0.3, 0.5, 0.7, 1.0]
+    hist = [[], [], [], [], []]
 
-    for j, p in enumerate(populations):
-        pop = Population(population=p)
+    for j, cp in enumerate(crossover_probs):
+        pop = Population(crossover_prob=cp, population=10, num_elete_selection=2)
         for i in range(100):
             while pop.max < 10:
                 pop.step()
             hist[j].append(pop.generation)
             pop.reset()
     
-    plt.boxplot(hist, labels=['pop='+str(populations[0]), 'pop='+str(populations[1]), 'pop='+str(populations[2]), 'pop='+str(populations[3])])
+    plt.boxplot(hist, labels=['cp='+str(crossover_probs[0]), 'cp='+str(crossover_probs[1]), 'cp='+str(crossover_probs[2]), 'cp='+str(crossover_probs[3]), 'cp='+str(crossover_probs[4])])
     plt.ylabel('generation')
     plt.show()
