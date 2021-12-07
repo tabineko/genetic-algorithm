@@ -37,7 +37,7 @@ class Gene():
 
 class Population():
 
-    def __init__(self, crossover_prob=0.1, mutation_prob=0.005, population=10, 
+    def __init__(self, crossover_prob=0.1, mutation_prob=0.005, population=10, tournament_size=2, 
         length_gene=10, generation_gap=0.8, num_elete_selection=0, print_step=False) -> None:
         self.generation = 0
         self.max = 0
@@ -51,6 +51,7 @@ class Population():
         self.length_gene = length_gene
         self.generation_gap = generation_gap
         self.num_elete_selection = num_elete_selection
+        self.tournament_size = tournament_size
         self.print_step = print_step
         
         self.population_selection = int((self.population * self.generation_gap )// 2 * 2) 
@@ -95,7 +96,7 @@ class Population():
                 ))
 
         # selection
-        selected_genes = self.tournament_selection()
+        selected_genes = self.tournament_selection(tournament_size=self.tournament_size)
         # print(selected_genes)
 
         # crossover
@@ -146,7 +147,7 @@ class Population():
     def roulette_selection(self):
         pass
 
-    def tournament_selection(self, tournament_size=2):
+    def tournament_selection(self, tournament_size):
         winners = []
         for _ in range(self.population_selection):
             sampled = random.sample(self.genes, k=tournament_size)
@@ -182,17 +183,64 @@ class Population():
 if __name__ == '__main__':
 
 
-    crossover_probs = [0.1, 0.3, 0.5, 0.7, 1.0]
-    hist = [[], [], [], [], []]
+    # crossover_probs = [0.1, 0.3, 0.5, 0.7, 1.0]
+    # hist = [[], [], [], [], []]
 
-    for j, cp in enumerate(crossover_probs):
-        pop = Population(crossover_prob=cp, population=10, num_elete_selection=2)
+    # for j, cp in enumerate(crossover_probs):
+    #     pop = Population(crossover_prob=cp, population=10, num_elete_selection=2)
+    #     for i in range(100):
+    #         while pop.max < 10:
+    #             pop.step()
+    #         hist[j].append(pop.generation)
+    #         pop.reset()
+    
+    # plt.boxplot(hist, labels=['cp='+str(crossover_probs[0]), 'cp='+str(crossover_probs[1]), 'cp='+str(crossover_probs[2]), 'cp='+str(crossover_probs[3]), 'cp='+str(crossover_probs[4])])
+    # plt.ylabel('generation')
+    # plt.show()
+
+    # mutation_probs = [0.5, 0.1, 0.01, 0.001, 0.0001]
+    # hist = [[] for _ in range(len(mutation_probs))]
+
+    # for j, mp in enumerate(mutation_probs):
+    #     pop = Population(mutation_prob=mp, population=20, num_elete_selection=0)
+    #     for i in range(100):
+    #         while pop.max < 10:
+    #             pop.step()
+    #         hist[j].append(pop.generation)
+    #         pop.reset()
+    
+    # plt.boxplot(hist, labels=list(map(str, mutation_probs)))
+    # plt.ylabel('generation')
+    # plt.xlabel('mutation probability')
+    # plt.show()
+    # tournament_sizes = [2, 4, 8]
+    # hist = [[], [], []]
+
+    # for j, ts in enumerate(tournament_sizes):
+    #     pop = Population(crossover_prob=0.5, population=20, num_elete_selection=0, tournament_size=ts)
+    #     for i in range(100):
+    #         while pop.max < 10:
+    #             pop.step()
+    #         hist[j].append(pop.generation)
+    #         pop.reset()
+    
+    # plt.boxplot(hist, labels=list(map(str, tournament_sizes)))
+    # plt.ylabel('generation')
+    # plt.xlabel('tournament size')
+    # plt.show()
+
+    eletes = [0, 2, 4]
+    hist = [[], [], []]
+
+    for j, s in enumerate(eletes):
+        pop = Population(crossover_prob=0.5, population=20, num_elete_selection=s)
         for i in range(100):
             while pop.max < 10:
                 pop.step()
             hist[j].append(pop.generation)
             pop.reset()
     
-    plt.boxplot(hist, labels=['cp='+str(crossover_probs[0]), 'cp='+str(crossover_probs[1]), 'cp='+str(crossover_probs[2]), 'cp='+str(crossover_probs[3]), 'cp='+str(crossover_probs[4])])
+    plt.boxplot(hist, labels=list(map(str, eletes)))
     plt.ylabel('generation')
+    plt.xlabel('number of elete selection')
     plt.show()
