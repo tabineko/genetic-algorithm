@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numpy.core.fromnumeric import mean
 from numpy.core.numeric import cross
+from numpy.lib import histograms
 import scipy as sp
 from tqdm import tqdm
 import pandas as pd
@@ -36,16 +37,21 @@ class Gene():
 
 class Population():
 
-    def __init__(self) -> None:
+    def __init__(self, crossover_prob=0.1, mutation_prob=0.005, population=10, 
+        length_gene=10, generation_gap=0.8, num_elete_selection=0, print_step=False) -> None:
         self.generation = 0
+        self.max = 0
+        self.min = 0
+        self.mean = 0
         self.rng = np.random.default_rng(1234)
 
-        self.crossover_rate = 0.3
-        self.mutation_rate = 0.005
-        self.population = 100
-        self.length_gene = 10
-        self.generation_gap = 0.8
-        self.num_elete_selection = 2
+        self.crossover_prob = crossover_prob
+        self.mutation_prob = mutation_prob
+        self.population = population
+        self.length_gene = length_gene
+        self.generation_gap = generation_gap
+        self.num_elete_selection = num_elete_selection
+        self.print_step = print_step
         
         self.population_selection = int((self.population * self.generation_gap )// 2 * 2) 
         self.population_copy = self.population - self.population_selection
@@ -66,6 +72,10 @@ class Population():
     def reset(self):
         self.genes = [Gene.make_random_instance(self.length_gene) for _ in range(self.population)]
         self.generation = 0
+        self.max = 0
+        self.min = 0
+        self.mean = 0
+        self.calc_fitness()
             
 
     def step(self):
@@ -112,11 +122,15 @@ class Population():
         self.genes = next_generation
         self.calc_fitness()
         self.generation += 1
-        print(self.generation, 
+        self.max = np.max(self.fitnesses)
+        self.min = np.min(self.fitnesses)
+        self.mean = np.mean(self.fitnesses)
+
+        if self.print_step:
+            print(self.generation, 
             np.mean(self.fitnesses),
             np.max(self.fitnesses),
-            np.min(self.fitnesses))
-        
+            np.min(self.fitnesses))      
 
 
     # fitness function for onemax problem
@@ -147,7 +161,7 @@ class Population():
 
     def uniform_crossover(self, gene1, gene2):
         # if do not crossover
-        if random.random() > self.crossover_rate:
+        if random.random() > self.crossover_prob:
             return gene1, gene2
         
         # if do crossover
@@ -159,20 +173,26 @@ class Population():
     
     def mutation(self, genes):
         for gene in genes:
-            mask=random.choices([0, 1], k=self.length_gene, weights=[1-self.mutation_rate, self.mutation_rate])
+            mask=random.choices([0, 1], k=self.length_gene, weights=[1-self.mutation_prob, self.mutation_prob])
             gene.modify_gene(gene.gene ^ mask)
         
         return genes
 
 
 if __name__ == '__main__':
-    pop = Population()
-
-    for i in range(30):
-
-        pop.step()
-        # for gene in pop.genes:
-        #     pprint(gene.gene)
-        # print()
 
 
+    populations = [10, 50, 100, 200]
+    hist = [[], [], [], []]
+
+    for j, p in enumerate(populations):
+        pop = Population(population=p)
+        for i in range(100):
+            while pop.max < 10:
+                pop.step()
+            hist[j].append(pop.generation)
+            pop.reset()
+    
+    plt.boxplot(hist, labels=['pop='+str(populations[0]), 'pop='+str(populations[1]), 'pop='+str(populations[2]), 'pop='+str(populations[3])])
+    plt.ylabel('generation')
+    plt.show()
