@@ -1,9 +1,31 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import random
+# https://github.com/waqqasiq/n-queen-problem-using-genetic-algorithm/blob/master/N-Queen_GeneticAlgo.py
 
-def onemax(gene):
-    return np.sum(gene)
+# fitness_function. count collisions and sub it from possible highest fitness.
+def fitness_function(gene):
+    n = len(gene)
+    max_fitness = (n*(n-1))/2 
+    horizontal_collisions = sum([gene.count(queen) for queen in gene]) / 2
+    diagonal_collisions = 0
+
+    left_diagonal = [0] * 2*n
+    right_diagonal = [0] * 2*n
+    for i in range(n):
+        left_diagonal[i + gene[i] - 1] += 1
+        right_diagonal[n - i + gene[i] - 2] += 1
+
+    diagonal_collisions = 0
+    for i in range(2*n-1):
+        counter = 0
+        if left_diagonal[i] > 1:
+            counter += left_diagonal[i] - 1
+        if right_diagonal[i] > 1:
+            counter += right_diagonal[i] - 1
+        diagonal_collisions += counter / (n - abs(i-n+1))
+
+    return int(max_fitness - (horizontal_collisions + diagonal_collisions))
 
 class Gene():
 
@@ -18,7 +40,7 @@ class Gene():
         return gene
 
     def get_fitness(self) -> int:
-        return onemax(self.gene)
+        return fitness_function(self.gene)
 
     def __lt__(self, other):
         return self.get_fitness() < other.get_fitness()
@@ -61,7 +83,7 @@ class Population():
     def calc_fitness(self):
         self.fitnesses = []
         for gene in self.genes:
-            self.fitnesses.append(self.onemax(gene))
+            self.fitnesses.append(fitness_function(gene))
 
     def reset(self):
         self.genes = [Gene.make_random_instance(self.length_gene) for _ in range(self.population)]
@@ -126,10 +148,6 @@ class Population():
             np.max(self.fitnesses),
             np.min(self.fitnesses))      
 
-
-    # fitness function for onemax problem
-    def onemax(self, gene):
-        return np.sum(gene.gene)
     
     def elete_selection(self):
         return sorted(self.genes, reverse=True)[:self.num_elete_selection]
@@ -167,58 +185,20 @@ class Population():
     
     def mutation(self, genes):
         for gene in genes:
-            mask=random.choices([0, 1], k=self.length_gene, weights=[1-self.mutation_prob, self.mutation_prob])
-            gene.modify_gene(gene.gene ^ mask)
+            mask=random.choices([True, False], k=self.length_gene, weights=[1-self.mutation_prob, self.mutation_prob])
+            gene.modify_gene(np.array(gene.gene) mask)
         
         return genes
 
 
 if __name__ == '__main__':
-    # crossover_probs = [0.1, 0.3, 0.5, 0.7, 1.0]
-    # hist = [[], [], [], [], []]
+    l = np.array([0, 2, 4, 8])
+    m = np.array([1, 3, 5, 7])
 
-    # for j, cp in enumerate(crossover_probs):
-    #     pop = Population(crossover_prob=cp, population=10, num_elete_selection=2)
-    #     for i in range(100):
-    #         while pop.max < 10:
-    #             pop.step()
-    #         hist[j].append(pop.generation)
-    #         pop.reset()
-    
-    # plt.boxplot(hist, labels=['cp='+str(crossover_probs[0]), 'cp='+str(crossover_probs[1]), 'cp='+str(crossover_probs[2]), 'cp='+str(crossover_probs[3]), 'cp='+str(crossover_probs[4])])
-    # plt.ylabel('generation')
-    # plt.show()
+    mask = np.array([True, False, False, True])
 
-    # mutation_probs = [0.5, 0.1, 0.01, 0.001, 0.0001]
-    # hist = [[] for _ in range(len(mutation_probs))]
-
-    # for j, mp in enumerate(mutation_probs):
-    #     pop = Population(mutation_prob=mp, population=20, num_elete_selection=0)
-    #     for i in range(100):
-    #         while pop.max < 10:
-    #             pop.step()
-    #         hist[j].append(pop.generation)
-    #         pop.reset()
-    
-    # plt.boxplot(hist, labels=list(map(str, mutation_probs)))
-    # plt.ylabel('generation')
-    # plt.xlabel('mutation probability')
-    # plt.show()
-    # tournament_sizes = [2, 4, 8]
-    # hist = [[], [], []]
-
-    # for j, ts in enumerate(tournament_sizes):
-    #     pop = Population(crossover_prob=0.5, population=20, num_elete_selection=0, tournament_size=ts)
-    #     for i in range(100):
-    #         while pop.max < 10:
-    #             pop.step()
-    #         hist[j].append(pop.generation)
-    #         pop.reset()
-    
-    # plt.boxplot(hist, labels=list(map(str, tournament_sizes)))
-    # plt.ylabel('generation')
-    # plt.xlabel('tournament size')
-    # plt.show()
+    print(~mask)
+    # print(m*mask+l*~mask)
 
     # eletes = [0, 2, 4]
     # hist = [[], [], []]
