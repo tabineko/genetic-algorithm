@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import random
-import time
 # https://github.com/waqqasiq/n-queen-problem-using-genetic-algorithm/blob/master/N-Queen_GeneticAlgo.py
 
 # fitness_function. count collisions and sub it from possible highest fitness.
@@ -135,19 +134,13 @@ class Population():
             
 
     def step(self):
-        time_step_sta = time.time()
         next_generation = []
         # copy genes from parents generation
-        time_cp_sta = time.time()
         if self.population_copy:
             # elete selection
 
-            t1 = time.time()
             if self.num_elete_selection:
                 next_generation.extend(self.elete_selection())
-            t2 = time.time()
-            print(t2-t1)
-            t1 = time.time()
 
             num_random_selection = self.population_copy - self.num_elete_selection        
             if num_random_selection:
@@ -160,18 +153,9 @@ class Population():
                     self.genes, 
                     num_selection=num_random_selection
                 ))
-            t2 = time.time()
-            print(t2-t1)
-
-        time_cp_end = time.time()
-        
-        time_sel_sta = time.time()
 
         # selection
         selected_genes = self.tournament_selection(tournament_size=self.tournament_size)
-        time_sel_end = time.time()
-
-        time_co_sta = time.time()
 
         # crossover
         # shuffle the selected list and reshape into (n, 2)
@@ -187,14 +171,9 @@ class Population():
             crossovered_genes.extend([Gene(gene=g1), Gene(gene=g2)])
         # selected_genes = np.array(selected_genes).flatten().tolist()
         selected_genes = crossovered_genes
-        time_co_end = time.time()
 
-        time_mu_sta = time.time()
         # mutation
         selected_genes = self.mutation(selected_genes)
-        time_mu_end = time.time()
-
-        time_tmp_sta = time.time()
 
         next_generation.extend(selected_genes)
 
@@ -210,17 +189,6 @@ class Population():
             np.mean(self.fitnesses),
             np.max(self.fitnesses),
             np.min(self.fitnesses))      
-        time_tmp_end = time.time()
-        time_step_end = time.time()
-
-        print(
-            time_step_end-time_step_sta,
-            time_cp_end-time_cp_sta,
-            time_sel_end-time_sel_sta,
-            time_co_end-time_co_sta,
-            time_mu_end-time_mu_sta,
-            time_tmp_end-time_tmp_sta
-        )
     
     def elete_selection(self):
         return sorted(self.genes, reverse=True)[:self.num_elete_selection]
@@ -271,13 +239,13 @@ if __name__ == '__main__':
     # example = np.array([4, 1, 2, 0, 5, 3])
     # print(fitness_function(example)) 
 
-    pop = Population(length_gene=4, crossover_prob=0.8, population=5, num_elete_selection=0, print_step=False)
-    for gene in pop.genes:
-        print(gene.gene)
+    # pop = Population(length_gene=4, crossover_prob=0.8, population=5, num_elete_selection=0, print_step=False)
+    # for gene in pop.genes:
+    #     print(gene.gene)
     
-    print()
+    # print()
 
-    pop.step()
+    # pop.step()
 
     # print()
 
@@ -306,27 +274,27 @@ if __name__ == '__main__':
     # plt.xlabel('number of elete selection')
     # plt.show()
 
-    # crossover_prob = [0.9, 0.7, 0.5, 0.3, 0.1]
-    # hist = [[], [], [], [], []]
+    crossover_prob = [0.9, 0.7, 0.5, 0.3, 0.1]
+    hist = [[], [], [], [], []]
 
-    # queen_num = 7
-    # max_fitness = (queen_num*(queen_num-1))/2 
+    queen_num = 7
+    max_fitness = (queen_num*(queen_num-1))/2 
 
-    # for j, s in enumerate(crossover_prob):
-    #     pop = Population(length_gene=queen_num, crossover_prob=s, mutation_prob=0.3, population=100, num_elete_selection=10, print_step=False)
+    for j, s in enumerate(crossover_prob):
+        pop = Population(length_gene=queen_num, crossover_prob=s, mutation_prob=0.01, population=100, num_elete_selection=10, print_step=False)
 
-    #     for i in range(20):
-    #         while pop.max < max_fitness:
-    #             pop.step()
-    #             # print(pop.max)
-    #         hist[j].append(pop.generation)
-    #         print(pop.max, max(pop.genes).gene)
-    #         pop.reset()
+        for i in range(20):
+            while pop.max < max_fitness:
+                pop.step()
+                # print(pop.max)
+            hist[j].append(pop.generation)
+            print(pop.max, max(pop.genes).gene)
+            pop.reset()
     
-    # plt.boxplot(hist, labels=list(map(str, crossover_prob)))
-    # plt.ylabel('generation')
-    # plt.xlabel('crossover probability')
-    # plt.show()
+    plt.boxplot(hist, labels=list(map(str, crossover_prob)))
+    plt.ylabel('generation')
+    plt.xlabel('crossover probability')
+    plt.show()
     
     # mutation_prob = [0.9, 0.5, 0.3, 0.1, 0.01, 0.001]
     # hist = [[], [], [], [], [], []]
