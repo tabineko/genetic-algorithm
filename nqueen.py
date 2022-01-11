@@ -4,53 +4,91 @@ import random
 # https://github.com/waqqasiq/n-queen-problem-using-genetic-algorithm/blob/master/N-Queen_GeneticAlgo.py
 
 # fitness_function. count collisions and sub it from possible highest fitness.
+
 def fitness_function(gene):
+    '''calculate fitness
+
+    calculate fitness of genetics for n-queen problem
+
+    Args:
+        gene (np.ndarray): list of genetics
+    Returns:
+        int: fitness value of given genetics
+    '''
     n = len(gene)
-    max_fitness = (n*(n-1))/2 
-    horizontal_collisions = sum([gene.count(queen) for queen in gene]) / 2
-    diagonal_collisions = 0
+    max_fitness = (n * (n-1)) / 2
+    
+    h_collisions = len(gene) - len(np.unique(gene))
+    d_collisions = 0
 
-    left_diagonal = [0] * 2*n
-    right_diagonal = [0] * 2*n
-    for i in range(n):
-        left_diagonal[i + gene[i] - 1] += 1
-        right_diagonal[n - i + gene[i] - 2] += 1
+    for i, g in enumerate(gene):
+        for j in range(n):
+            # same column
+            if g != j:
+                diff_row = abs(j - g)
+                # left diag
+                if i - diff_row >= 0:
+                    if gene[i - diff_row] == j:
+                        d_collisions += 1
+                # right diag
+                if i + diff_row < n:
+                    if gene[i + diff_row] == j:
+                        d_collisions += 1
+    
+    # print(h_collisions, d_collisions)
+    return int(max_fitness - (h_collisions + d_collisions))
 
-    diagonal_collisions = 0
-    for i in range(2*n-1):
-        counter = 0
-        if left_diagonal[i] > 1:
-            counter += left_diagonal[i] - 1
-        if right_diagonal[i] > 1:
-            counter += right_diagonal[i] - 1
-        diagonal_collisions += counter / (n - abs(i-n+1))
-
-    return int(max_fitness - (horizontal_collisions + diagonal_collisions))
 
 class Gene():
+    ''' Genetic class
 
+    An object represents each individual
+
+    Attributes:
+        gene (np.ndarray): represents genetics
+        fitness (int): fitness value
+
+    '''
     def __init__(self, gene) -> None:
         self.gene = gene
-        self.fitness = self.get_fitness()
+        self.fitness = self.calculate_fitness()
         
     
     @classmethod
     def make_random_instance(cls, length_gene):
-        gene = cls(np.random.randint(0, 2, length_gene))
+        gene = cls(np.random.randint(0, length_gene, length_gene))
         return gene
 
-    def get_fitness(self) -> int:
+    def calculate_fitness(self) -> int:
         return fitness_function(self.gene)
 
     def __lt__(self, other):
-        return self.get_fitness() < other.get_fitness()
+        return self.calculate_fitness() < other.calculate_fitness()
 
     def modify_gene(self, gene):
         self.gene = gene
-        self.fitness = self.get_fitness()
+        self.fitness = self.calculate_fitness()
 
 
 class Population():
+    ''' set of some gene class
+
+    a class of population which is set of genetics
+
+    Attributes:
+        generation (int): number of generation of current population
+        max (int): maximum fitness of current population
+        min (int): minimum fitness of current population
+        mean (int): mean value of fitness of current population
+        rng (np.random.rnd): random generator
+        crossover_prob (float): probability to mutate of each selected pairs
+        mutation_prob (float): probability of mutation of each gene of each indiv.
+        population (int): the number of population of each genearation
+        length_gene (int): length of each genetics
+        generation_gap (float): ratio of how 
+
+    
+    '''
 
     def __init__(self, crossover_prob=0.1, mutation_prob=0.005, population=10, tournament_size=2, 
         length_gene=10, generation_gap=0.8, num_elete_selection=0, print_step=False) -> None:
@@ -69,6 +107,7 @@ class Population():
         self.tournament_size = tournament_size
         self.print_step = print_step
         
+        # recalculate selection num from parents generation
         self.population_selection = int((self.population * self.generation_gap )// 2 * 2) 
         self.population_copy = self.population - self.population_selection
         if self.num_elete_selection > self.population_copy:
@@ -78,12 +117,12 @@ class Population():
 
         # generate each instances
         self.genes = [Gene.make_random_instance(self.length_gene) for _ in range(self.population)]
-        self.calc_fitness()
+        self.calc_fitnesses()
 
-    def calc_fitness(self):
+    def calc_fitnesses(self):
         self.fitnesses = []
         for gene in self.genes:
-            self.fitnesses.append(fitness_function(gene))
+            self.fitnesses.append(fitness_function(gene.gene))
 
     def reset(self):
         self.genes = [Gene.make_random_instance(self.length_gene) for _ in range(self.population)]
@@ -91,7 +130,7 @@ class Population():
         self.max = 0
         self.min = 0
         self.mean = 0
-        self.calc_fitness()
+        self.calc_fitnesses()
             
 
     def step(self):
@@ -112,7 +151,6 @@ class Population():
 
         # selection
         selected_genes = self.tournament_selection(tournament_size=self.tournament_size)
-        # print(selected_genes)
 
         # crossover
         # shuffle the selected list and reshape into (n, 2)
@@ -124,8 +162,6 @@ class Population():
         crossovered_genes = []
         for gene1, gene2 in selected_genes:
             g1, g2 = self.uniform_crossover(gene1.gene, gene2.gene)
-            # gene1.modify_gene(g1)
-            # gene2.modify_gene(g2)
             crossovered_genes.extend([Gene(gene=g1), Gene(gene=g2)])
         # selected_genes = np.array(selected_genes).flatten().tolist()
         selected_genes = crossovered_genes
@@ -136,7 +172,7 @@ class Population():
         next_generation.extend(selected_genes)
 
         self.genes = next_generation
-        self.calc_fitness()
+        self.calc_fitnesses()
         self.generation += 1
         self.max = np.max(self.fitnesses)
         self.min = np.min(self.fitnesses)
@@ -177,41 +213,102 @@ class Population():
             return gene1, gene2
         
         # if do crossover
-        mask = self.rng.integers(low=0, high=2, size=self.length_gene)
-        g1 = gene1 & mask | gene2 & ~mask
-        g2 = gene1 & ~mask | gene2 & mask
+        mask = np.array(random.choices([True, False], k=self.length_gene))
+
+        g1 = gene1 * mask + gene2 * ~mask
+        g2 = gene1 * ~mask + gene2 * mask
         
         return g1, g2
     
     def mutation(self, genes):
         for gene in genes:
-            mask=random.choices([True, False], k=self.length_gene, weights=[1-self.mutation_prob, self.mutation_prob])
-            gene.modify_gene(np.array(gene.gene) mask)
+            mask = np.array(random.choices([True, False], k=self.length_gene, weights=[1-self.mutation_prob, self.mutation_prob]))
+            rands = random.choices(list(range(self.length_gene)), k=self.length_gene)
+            gene.modify_gene(gene.gene * mask + rands * ~mask)
         
         return genes
 
 
 if __name__ == '__main__':
-    l = np.array([0, 2, 4, 8])
-    m = np.array([1, 3, 5, 7])
 
-    mask = np.array([True, False, False, True])
+    # example = np.array([4, 1, 2, 0, 5, 3])
+    # print(fitness_function(example)) 
 
-    print(~mask)
-    # print(m*mask+l*~mask)
+    # pop = Population(length_gene=4, crossover_prob=0.8, population=5, num_elete_selection=0, print_step=False)
+    # for gene in pop.genes:
+    #     print(gene.gene)
+    
+    # print()
 
-    # eletes = [0, 2, 4]
-    # hist = [[], [], []]
+    # pop.step()
+
+    # print()
+
+    # for gene in pop.genes:
+    #     print(gene.gene)
+
+    # eletes = [4]
+    # hist = [[]]
+
+    # queen_num = 7
+    # max_fitness = (queen_num*(queen_num-1))/2 
 
     # for j, s in enumerate(eletes):
-    #     pop = Population(crossover_prob=0.8, population=20, num_elete_selection=s)
-    #     for i in range(100):
-    #         while pop.max < 10:
+    #     pop = Population(length_gene=queen_num, crossover_prob=0.5, mutation_prob=0.3, population=100, num_elete_selection=s, print_step=True)
+
+    #     for i in range(50):
+    #         while pop.max < max_fitness:
     #             pop.step()
+    #             print(pop.max)
     #         hist[j].append(pop.generation)
+    #         print(pop.max, max(pop.genes).gene)
     #         pop.reset()
     
     # plt.boxplot(hist, labels=list(map(str, eletes)))
     # plt.ylabel('generation')
     # plt.xlabel('number of elete selection')
+    # plt.show()
+
+    crossover_prob = [0.9, 0.7, 0.5, 0.3, 0.1]
+    hist = [[], [], [], [], []]
+
+    queen_num = 7
+    max_fitness = (queen_num*(queen_num-1))/2 
+
+    for j, s in enumerate(crossover_prob):
+        pop = Population(length_gene=queen_num, crossover_prob=s, mutation_prob=0.3, population=100, num_elete_selection=10, print_step=False)
+
+        for i in range(20):
+            while pop.max < max_fitness:
+                pop.step()
+                # print(pop.max)
+            hist[j].append(pop.generation)
+            print(pop.max, max(pop.genes).gene)
+            pop.reset()
+    
+    plt.boxplot(hist, labels=list(map(str, crossover_prob)))
+    plt.ylabel('generation')
+    plt.xlabel('crossover probability')
+    plt.show()
+    
+    # mutation_prob = [0.9, 0.5, 0.3, 0.1, 0.01, 0.001]
+    # hist = [[], [], [], [], [], []]
+
+    # queen_num = 7
+    # max_fitness = (queen_num*(queen_num-1))/2 
+
+    # for j, s in enumerate(mutation_prob):
+    #     pop = Population(length_gene=queen_num, crossover_prob=0.4, mutation_prob=s, population=100, num_elete_selection=10, print_step=False)
+
+    #     for i in range(50):
+    #         while pop.max < max_fitness:
+    #             pop.step()
+    #             # print(pop.max)
+    #         hist[j].append(pop.generation)
+    #         print(pop.generation, max(pop.genes).gene)
+    #         pop.reset()
+    
+    # plt.boxplot(hist, labels=list(map(str, mutation_prob)))
+    # plt.ylabel('generation')
+    # plt.xlabel('mutation probability')
     # plt.show()
