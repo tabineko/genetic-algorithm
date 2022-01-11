@@ -284,7 +284,7 @@ if __name__ == '__main__':
 
     for j, s in enumerate(crossover_prob):
         pop = Population(length_gene=queen_num, crossover_prob=s, mutation_prob=0.3, 
-            population=100, num_elete_selection=10, generation_gap=0.9, print_step=False)
+            population=100, num_elete_selection=10, generation_gap=0.8, print_step=False)
 
         for i in range(20):
             while pop.max < 1:
