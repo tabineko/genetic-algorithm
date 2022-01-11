@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import random
+import pandas as pd
 # https://github.com/waqqasiq/n-queen-problem-using-genetic-algorithm/blob/master/N-Queen_GeneticAlgo.py
 
 # fitness_function. count collisions and sub it from possible highest fitness.
@@ -16,7 +17,6 @@ def fitness_function(gene):
         int: fitness value of given genetics
     '''
     n = len(gene)
-    max_fitness = (n * (n-1)) / 2
     
     h_collisions = len(gene) - len(np.unique(gene))
     d_collisions = 0
@@ -36,7 +36,7 @@ def fitness_function(gene):
                         d_collisions += 1
     
     # print(h_collisions, d_collisions)
-    return int(max_fitness - (h_collisions + d_collisions))
+    return 1 / (1 + (h_collisions + d_collisions / 2))
 
 
 class Gene():
@@ -239,15 +239,17 @@ if __name__ == '__main__':
     # example = np.array([4, 1, 2, 0, 5, 3])
     # print(fitness_function(example)) 
 
-    # pop = Population(length_gene=4, crossover_prob=0.8, population=5, num_elete_selection=0, print_step=False)
+    # pop = Population(length_gene=4, crossover_prob=0.8, mutation_prob=0.01, population=5, num_elete_selection=0, print_step=False)
     # for gene in pop.genes:
     #     print(gene.gene)
-    
+
+    # # pop.step()
+    # pop.mutation(pop.genes)
     # print()
 
-    # pop.step()
 
-    # print()
+    # for gene in pop.genes:
+    #     print(gene.gene)
 
     # for gene in pop.genes:
     #     print(gene.gene)
@@ -281,17 +283,18 @@ if __name__ == '__main__':
     max_fitness = (queen_num*(queen_num-1))/2 
 
     for j, s in enumerate(crossover_prob):
-        pop = Population(length_gene=queen_num, crossover_prob=s, mutation_prob=0.01, population=100, num_elete_selection=10, print_step=False)
+        pop = Population(length_gene=queen_num, crossover_prob=s, mutation_prob=0.3, 
+            population=100, num_elete_selection=10, generation_gap=0.9, print_step=False)
 
         for i in range(20):
-            while pop.max < max_fitness:
+            while pop.max < 1:
                 pop.step()
                 # print(pop.max)
             hist[j].append(pop.generation)
             print(pop.max, max(pop.genes).gene)
             pop.reset()
-    
-    plt.boxplot(hist, labels=list(map(str, crossover_prob)))
+    pd.DataFrame(hist).to_csv('hist_crossover.csv', header=False, index=False)
+    plt.boxplot(hist, labels=list(map(str, crossover_prob)), showfliers=False)
     plt.ylabel('generation')
     plt.xlabel('crossover probability')
     plt.show()
@@ -312,7 +315,8 @@ if __name__ == '__main__':
     #         hist[j].append(pop.generation)
     #         print(pop.generation, max(pop.genes).gene)
     #         pop.reset()
-    
+
+    pd.DataFrame(hist).to_csv('hist_mutation.csv', header=False, index=False)
     # plt.boxplot(hist, labels=list(map(str, mutation_prob)))
     # plt.ylabel('generation')
     # plt.xlabel('mutation probability')
